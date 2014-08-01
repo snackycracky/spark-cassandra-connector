@@ -1,13 +1,10 @@
 package com.datastax.spark.connector.streaming
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestKit
-import org.apache.spark.SparkEnv
+import akka.actor.Props
+import com.datastax.spark.connector.cql.CassandraConnector
+import com.datastax.spark.connector.util.SparkServer
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext.toPairDStreamFunctions
-import org.apache.spark.streaming.{Milliseconds, StreamingContext}
-import com.datastax.spark.connector.cql.CassandraConnector
-import com.datastax.spark.connector.util.{CassandraServer, SparkServer}
 
 /**
  * Usages: Create the [[org.apache.spark.streaming.StreamingContext]] then write async to the stream.
@@ -71,19 +68,3 @@ class ActorStreamingSpec extends ActorSpec {
     }
   }
 }
-
-abstract class ActorSpec(val ssc: StreamingContext, _system: ActorSystem) extends TestKit(_system) with StreamingSpec
-  with CassandraServer {
-  def this() = this (new StreamingContext(SparkServer.sc, Milliseconds(300)), SparkEnv.get.actorSystem)
-
- useCassandraConfig("cassandra-default.yaml.template")
-
-  after {
-    // Spark Context is shared among all integration test so we don't want to stop it here
-    ssc.stop(stopSparkContext = false)
-  }
-}
-
-
-
-
