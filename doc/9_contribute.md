@@ -4,8 +4,7 @@
 Before starting to work on a feature or a fix, make sure that:
 - There is a ticket for your work in the project's issue tracker. If not, simply create it first.
 - Use the ticket number in your branch name.
-- For features (vs tasks, bugs, minor changes): 
-  - The ticket has been scheduled for a milestone (ask the team if you are creating it). 
+- For features (vs tasks, bugs, minor changes) the ticket has been scheduled for a milestone (ask the team if you are creating it). 
 
 ### Getting Started
  - You should always perform your work in a Git feature branch. 
@@ -48,3 +47,5 @@ For a Pull Request to be considered at all it has to meet these requirements:
  - The commit messages must properly describe the changes. 
 
 If these requirements are not met then the code should not be merged into master. 
+
+And finally, thanks and have fun!
