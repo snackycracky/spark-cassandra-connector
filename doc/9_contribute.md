@@ -5,8 +5,7 @@ Before starting to work on a feature or a fix, make sure that:
 - There is a ticket for your work in the project's issue tracker. If not, simply create it first.
 - Use the ticket number in your branch name.
 - For features (vs tasks, bugs, minor changes): 
-  - The ticket has been scheduled for the current milestone.
-  - The ticket have been discussed and prioritized by the team.  
+  - The ticket has been scheduled for a milestone (ask the team if you are creating it). 
 
 ### Getting Started
  - You should always perform your work in a Git feature branch. 
