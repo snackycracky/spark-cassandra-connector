@@ -56,7 +56,6 @@ The documentation will be generated to:
   - [Saving datasets to Cassandra](doc/5_saving.md)
   - [Customizing the object mapping](doc/6_advanced_mapper.md)
   - [Using Connector in Java](doc/7_java_api.md)
-  - [Contribute](doc/9_contribute.md)
     
 ## License
 This software is available under the [Apache License, Version 2.0](LICENSE).    
@@ -94,3 +93,6 @@ Then copy the generated test jar to your Spark nodes and run:
     export IT_TEST_CASSANDRA_HOST=<IP of one of the Cassandra nodes>
     export IT_TEST_SPARK_MASTER=<Spark Master URL>
     sbt it:test    
+
+## Contributing
+Please see the documentation on [Contributing](doc/9_contribute.md). 
