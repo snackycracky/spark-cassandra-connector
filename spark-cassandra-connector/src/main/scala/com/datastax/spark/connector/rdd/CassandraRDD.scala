@@ -1,14 +1,13 @@
 package com.datastax.spark.connector.rdd
 
 import java.io.IOException
-
 import scala.reflect.ClassTag
 import scala.collection.JavaConversions._
 import scala.language.existentials
 
 import com.datastax.spark.connector.metrics.InputMetricsUpdater
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Dependency, Partition, SparkContext, TaskContext}
 
 import com.datastax.driver.core._
 import com.datastax.spark.connector.{SomeColumns, AllColumns, ColumnSelector}
@@ -54,10 +53,11 @@ class CassandraRDD[R] private[connector] (
     val tableName: String,
     val columnNames: ColumnSelector = AllColumns,
     val where: CqlWhereClause = CqlWhereClause.empty,
-    val readConf: ReadConf = ReadConf())(
+    val readConf: ReadConf = ReadConf(),
+    val dependecyList : Seq[Dependency[_]] = Seq.empty)(
   implicit
     ct : ClassTag[R], @transient rtf: RowReaderFactory[R])
-  extends RDD[R](sc, Seq.empty) with Logging {
+  extends RDD[R](sc, dependecyList) with Logging {
 
   /* Logging classes inheritance conflict fix. */
   override def log = super[Logging].log
@@ -74,9 +74,9 @@ class CassandraRDD[R] private[connector] (
   override def logError(msg: => String, throwable: Throwable) = super[Logging].logError(msg, throwable)
   override def isTraceEnabled() = super[Logging].isTraceEnabled()
 
-  private def fetchSize = readConf.fetchSize
+  protected def fetchSize = readConf.fetchSize
   private def splitSize = readConf.splitSize
-  private def consistencyLevel = readConf.consistencyLevel
+  protected def consistencyLevel = readConf.consistencyLevel
 
   private def copy(columnNames: ColumnSelector = columnNames,
                    where: CqlWhereClause = where,
@@ -249,9 +249,9 @@ class CassandraRDD[R] private[connector] (
     }
   }
 
-  private lazy val rowTransformer = implicitly[RowReaderFactory[R]].rowReader(tableDef)
+  protected lazy val rowTransformer = implicitly[RowReaderFactory[R]].rowReader(tableDef)
 
-  private def checkColumnsExistence(columns: Seq[NamedColumnRef]): Seq[NamedColumnRef] = {
+  protected def checkColumnsExistence(columns: Seq[NamedColumnRef]): Seq[NamedColumnRef] = {
     val allColumnNames = tableDef.allColumns.map(_.columnName).toSet
     val regularColumnNames = tableDef.regularColumns.map(_.columnName).toSet
 
@@ -318,13 +318,13 @@ class CassandraRDD[R] private[connector] (
     }
   }
 
-  private lazy val cassandraPartitionerClassName =
+  protected lazy val cassandraPartitionerClassName =
     connector.withSessionDo {
       session =>
         session.execute("SELECT partitioner FROM system.local").one().getString(0)
     }
 
-  private def quote(name: String) = "\"" + name + "\""
+  protected def quote(name: String) = "\"" + name + "\""
 
   override def getPartitions: Array[Partition] = {
     verify // let's fail fast
