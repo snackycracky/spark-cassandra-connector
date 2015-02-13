@@ -19,6 +19,7 @@ import static com.datastax.spark.connector.util.JavaApiHelper.toScalaSeq;
  * <p>The wrapper can be obtained by one of the methods of {@link com.datastax.spark.connector.japi.SparkContextJavaFunctions}
  * or {@link com.datastax.spark.connector.japi.StreamingContextJavaFunctions}.</p>
  */
+@SuppressWarnings("unchecked")
 public class CassandraJavaRDD<R> extends JavaRDD<R> {
 
     public CassandraJavaRDD(CassandraRDD<R> rdd, Class<R> clazz) {
@@ -44,7 +45,7 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
     public CassandraJavaRDD<R> select(String... columnNames) {
         // explicit type argument is intentional and required here
         //noinspection RedundantTypeArguments
-        CassandraRDD<R> newRDD = rdd().select(JavaApiHelper.<NamedColumnRef>toScalaSeq(CassandraJavaUtil.convert(columnNames)));
+        CassandraRDD<R> newRDD = (CassandraRDD<R>) rdd().select(JavaApiHelper.<NamedColumnRef>toScalaSeq(CassandraJavaUtil.convert(columnNames)));
         return new CassandraJavaRDD<>(newRDD, classTag());
     }
 
@@ -58,7 +59,7 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
     public CassandraJavaRDD<R> select(NamedColumnRef... selectionColumns) {
         // explicit type argument is intentional and required here
         //noinspection RedundantTypeArguments
-        CassandraRDD<R> newRDD = rdd().select(JavaApiHelper.<NamedColumnRef>toScalaSeq(selectionColumns));
+        CassandraRDD<R> newRDD = (CassandraRDD<R>) rdd().select(JavaApiHelper.<NamedColumnRef>toScalaSeq(selectionColumns));
         return new CassandraJavaRDD<>(newRDD, classTag());
     }
 
@@ -70,7 +71,7 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
      * when they filter on an unindexed, non-clustering column.</p>
      */
     public CassandraJavaRDD<R> where(String cqlWhereClause, Object... args) {
-        CassandraRDD<R> newRDD = rdd().where(cqlWhereClause, toScalaSeq(args));
+        CassandraRDD<R> newRDD = (CassandraRDD<R>) rdd().where(cqlWhereClause, toScalaSeq(args));
         return new CassandraJavaRDD<>(newRDD, classTag());
     }
 
@@ -87,7 +88,7 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
      * Returns a copy of this RDD with connector changed to the specified one.
      */
     public CassandraJavaRDD<R> withConnector(CassandraConnector connector) {
-        CassandraRDD<R> newRDD = rdd().withConnector(connector);
+        CassandraRDD<R> newRDD = (CassandraRDD<R>) rdd().withConnector(connector);
         return new CassandraJavaRDD<>(newRDD, classTag());
     }
 
@@ -95,7 +96,7 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
      * Returns a copy of this RDD with read configuration changed to the specified one.
      */
     public CassandraJavaRDD<R> withReadConf(ReadConf config) {
-        CassandraRDD<R> newRDD = rdd().withReadConf(config);
+        CassandraRDD<R> newRDD = (CassandraRDD<R>) rdd().withReadConf(config);
         return new CassandraJavaRDD<>(newRDD, classTag());
     }
 }

@@ -62,14 +62,14 @@ class CassandraRDD[R] private[connector](
     tableName, columnNames, where, readConf, dependecyList) {
 
 
-  protected def copy(columnNames: ColumnSelector = columnNames,
+  override protected def copy(columnNames: ColumnSelector = columnNames,
                    where: CqlWhereClause = where,
-                   readConf: ReadConf = readConf, connector: CassandraConnector = connector): CassandraRDD[R] = {
+                   readConf: ReadConf = readConf, connector: CassandraConnector = connector) = {
     require(sc != null,
       "RDD transformation requires a non-null SparkContext. Unfortunately SparkContext in this CassandraRDD is null. " +
       "This can happen after CassandraRDD has been deserialized. SparkContext is not Serializable, therefore it deserializes to null." +
       "RDD transformations are not allowed inside lambdas used in other RDD transformations.")
-    new CassandraRDD(sc, connector, keyspaceName, tableName, columnNames, where, readConf)
+    new CassandraRDD[R](sc, connector, keyspaceName, tableName, columnNames, where, readConf).asInstanceOf[this.type]
   }
 
   /** Maps each row into object of a different type using provided function taking column value(s) as argument(s).
