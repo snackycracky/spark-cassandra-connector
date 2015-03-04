@@ -16,6 +16,7 @@ import com.datastax.spark.connector.testkit._
 import com.datastax.spark.connector.embedded._
 
 case class KeyValue(key: Int, group: Long, value: String)
+case class KeyValueWithTransient(key: Int, group: Long, value: String, @transient transientField: String)
 case class KeyValueWithTTL(key: Int, group: Long, value: String, ttl: Int)
 case class KeyValueWithTimestamp(key: Int, group: Long, value: String, timestamp: Long)
 case class KeyValueWithConversion(key: String, group: Int, value: String)
@@ -30,7 +31,7 @@ class TableWriterSpec extends FlatSpec with Matchers with BeforeAndAfter with Sh
     session.execute("DROP KEYSPACE IF EXISTS write_test")
     session.execute("CREATE KEYSPACE IF NOT EXISTS write_test WITH REPLICATION = { 'class': 'SimpleStrategy', 'replication_factor': 1 }")
 
-    for (x <- 1 to 16) {
+    for (x <- 1 to 17) {
       session.execute(s"CREATE TABLE IF NOT EXISTS write_test.key_value_$x (key INT, group BIGINT, value TEXT, PRIMARY KEY (key, group))")
     }
 
@@ -394,6 +395,12 @@ class TableWriterSpec extends FlatSpec with Matchers with BeforeAndAfter with Sh
         row.getLong(1) should be (ts * 1000L + row.getInt(0) * 100L)
       })
     }
+  }
+
+  it should "write RDD of case class objects with transient fields" in {
+    val col = Seq(KeyValueWithTransient(1, 1L, "value1", "a"), KeyValueWithTransient(2, 2L, "value2", "b"), KeyValueWithTransient(3, 3L, "value3", "c"))
+    sc.parallelize(col).saveToCassandra("write_test", "key_value_17")
+    verifyKeyValueTable("key_value_17")
   }
 
 }
