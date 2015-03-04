@@ -71,9 +71,14 @@ class CassandraRDDSpec extends FlatSpec with Matchers with SharedEmbeddedCassand
     session.execute("INSERT INTO read_test.clustering_time (key, time, value) VALUES (1, '2014-07-12 20:00:02', 'value2')")
     session.execute("INSERT INTO read_test.clustering_time (key, time, value) VALUES (1, '2014-07-12 20:00:03', 'value3')")
 
-    session.execute("CREATE TYPE read_test.address (street text, city text, zip int)")
+    session.execute("CREATE TYPE IF NOT EXISTS read_test.address (street text, city text, zip int)")
     session.execute("CREATE TABLE IF NOT EXISTS read_test.udts(key INT PRIMARY KEY, name text, addr frozen<address>)")
     session.execute("INSERT INTO read_test.udts(key, name, addr) VALUES (1, 'name', {street: 'Some Street', city: 'Paris', zip: 11120})")
+
+    session.execute("""CREATE KEYSPACE IF NOT EXISTS "MixedSpace" WITH REPLICATION = { 'class': 'SimpleStrategy', 'replication_factor': 1 }""")
+    session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MixedCase"(key INT PRIMARY KEY, value INT)""")
+    session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MiXEDCase"(key INT PRIMARY KEY, value INT)""")
+    session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MixedCASE"(key INT PRIMARY KEY, value INT)""")
 
     session.execute("CREATE TABLE IF NOT EXISTS read_test.big_table (key INT PRIMARY KEY, value INT)")
     val insert = session.prepare("INSERT INTO read_test.big_table(key, value) VALUES (?, ?)")
@@ -625,6 +630,30 @@ class CassandraRDDSpec extends FlatSpec with Matchers with SharedEmbeddedCassand
   it should "allow to use empty RDD on defined table" in {
     val result = sc.cassandraTable("read_test", "simple_kv").toEmptyCassandraRDD.collect()
     result should have length 0
+  }
+
+  it should "suggest mixed case keyspaces if they exist" in {
+    try {
+      val result = sc.cassandraTable("mixedspace", "funkytable").collect()
+      assert(false, "A cassandraTable call on a keyspace and table that don't exist should thrown an exception")
+    } catch {
+      case e:IOException=> e.getMessage should include ("MixedSpace")
+      case e:Any => fail(s"$e : A cassandraTable call on a keyspace and table that don't exist should throw an IOException")
+    }
+  }
+
+  it should "suggest mixed case tables if they exist" in {
+    try {
+      val result = sc.cassandraTable("MixedSpace","mixedcase").collect()
+      fail("A cassandraTable call on a keyspace and table that don't exist should thrown an exception")
+    } catch {
+      case e:IOException=> {
+        e.getMessage should include ("MixedSpace.MixedCase")
+        e.getMessage should include ("MixedSpace.MiXEDCase")
+        e.getMessage should include ("MixedSpace.MixedCASE")
+      }
+      case e:Any => fail(s"$e : A cassandraTable call on a keyspace and table that don't exist should throw an IOException")
+    }
   }
 
 }

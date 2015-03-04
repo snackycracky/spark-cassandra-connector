@@ -276,7 +276,37 @@ class CassandraRDD[R] private[connector] (
   lazy val tableDef = {
     Schema.fromCassandra(connector, Some(keyspaceName), Some(tableName)).tables.headOption match {
       case Some(t) => t
-      case None => throw new IOException(s"Table not found: $keyspaceName.$tableName")
+      case None => {
+        val clusterMetadata = connector.withClusterDo(_.getMetadata)
+        val keyspaces = clusterMetadata.getKeyspaces
+        val ksMap = keyspaces.groupBy(_.getName.toLowerCase).toMap
+        ksMap.get(keyspaceName.toLowerCase) match {
+          case Some(keyspaceList) => {
+            val possibleTables =
+              keyspaceList.flatMap(_.getTables)
+                .filter(_.getName.toLowerCase == tableName.toLowerCase)
+                .map(table => table.getKeyspace.getName + "." + table.getName)
+            if (!possibleTables.isEmpty) {
+              val errorString = possibleTables.mkString("\n")
+              throw new IOException(
+                s"""Couldn't find: $keyspaceName.$tableName
+                    |Other tables exist with different cases
+                    |Did you mean :
+                    |$errorString""".stripMargin)
+            } else {
+              val errorString = keyspaceList.map(_.getName).mkString("\n")
+              throw new IOException(
+                s"""Couldtn't find: $keyspaceName.$tableName
+                    |Other keyspaces exist with different cases
+                    |Did you mean:
+                    |$errorString""".stripMargin)
+            }
+          }
+          case None => {
+            throw new IOException(s"Table not found: $keyspaceName.$tableName")
+          }
+        }
+      }
     }
   }
 
@@ -335,7 +365,8 @@ class CassandraRDD[R] private[connector] (
   lazy val verify = {
     val targetType = implicitly[ClassTag[R]]
 
-    tableDef.allColumns  // will throw IOException if table does not exist
+    tableDef.allColumns // will throw IOException if table does not exist
+
 
     rowTransformer.columnNames match {
       case Some(names) =>
