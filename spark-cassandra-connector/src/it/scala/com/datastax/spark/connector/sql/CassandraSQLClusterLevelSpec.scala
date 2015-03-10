@@ -24,7 +24,7 @@ class CassandraSQLClusterLevelSpec extends SparkCassandraITSpecBase with SecondE
     session.execute("INSERT INTO sql_test1.test1 (a, b, c) VALUES (5, 1, 5)")
   }
 
-  useCassandraConfig2("cassandra-second.yaml.template")
+  useCassandraConfig2("cassandra-default.yaml.template")
   val conn2 = CassandraConnector(Set(cassandraHost2), 9043)
   conn2.withSessionDo { session =>
     session.execute("CREATE KEYSPACE IF NOT EXISTS sql_test2 WITH REPLICATION = { 'class': 'SimpleStrategy', 'replication_factor': 1 }")

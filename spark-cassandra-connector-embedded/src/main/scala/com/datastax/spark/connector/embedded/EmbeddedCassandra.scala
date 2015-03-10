@@ -25,7 +25,15 @@ trait EmbeddedCassandra {
       if (currentConfigTemplate != configTemplate || forceReload) {
         clearCache()
         cassandra.map(_.destroy())
-        cassandra = Some(new CassandraRunner(configTemplate, DefaultHost, DefaultNativePort))
+        val props = Map("seeds"   -> "127.0.0.1",
+          "storage_port"          -> "7000",
+          "ssl_storage_port"      -> "7001",
+          "native_transport_port" -> "9042",
+          "rpc_address"           -> "127.0.0.1",
+          "rpc_port"              -> "9160",
+          "listen_address"        -> "127.0.0.1",
+          "cluster_name"          -> "Test Cluster")
+        cassandra = Some(new CassandraRunner(configTemplate, DefaultHost, DefaultNativePort, props))
         currentConfigTemplate = configTemplate
       }
     }
@@ -45,7 +53,15 @@ trait SecondEmbeddedCassandra {
   def useCassandraConfig2(configTemplate: String) {
     import SecondEmbeddedCassandra._
     cassandra.map(_.destroy())
-    cassandra = Some(new CassandraRunner(configTemplate, DefaultHost, DefaultNativePort))
+    val props = Map("seeds"   -> "127.0.0.2",
+      "storage_port"          -> "7010",
+      "ssl_storage_port"      -> "7011",
+      "native_transport_port" -> "9043",
+      "rpc_address"           -> "127.0.0.2",
+      "rpc_port"              -> "9161",
+      "listen_address"        -> "127.0.0.2",
+      "cluster_name"          -> "Test Cluster2")
+    cassandra = Some(new CassandraRunner(configTemplate, DefaultHost, DefaultNativePort, props))
   }
 }
 
@@ -86,7 +102,7 @@ object SecondEmbeddedCassandra {
 
 }
 
-private[connector] class CassandraRunner(val configTemplate: String, host: String, nativePort: Integer) extends Embedded {
+private[connector] class CassandraRunner(val configTemplate: String, host: String, nativePort: Integer, props: Map[String, String]) extends Embedded {
 
   import java.io.{File, FileOutputStream, IOException}
   import org.apache.cassandra.io.util.FileUtils
@@ -100,7 +116,7 @@ private[connector] class CassandraRunner(val configTemplate: String, host: Strin
   val confDir = mkdir(new File(tempDir, "conf"))
   val confFile = new File(confDir, "cassandra.yaml")
 
-  private val properties = Map("cassandra_dir" -> workDir.toString)
+  private val properties = if(props != null) Map("cassandra_dir" -> workDir.toString) ++ props else Map("cassandra_dir" -> workDir.toString)
   closeAfterUse(ClassLoader.getSystemResourceAsStream(configTemplate)) { input =>
     closeAfterUse(new FileOutputStream(confFile)) { output =>
       copyTextFileWithVariableSubstitution(input, output, properties)
