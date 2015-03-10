@@ -54,6 +54,7 @@ object WriteConf {
   val DefaultBatchBufferSize = 1000
   val DefaultBatchLevel = BatchLevel.Partition
   val DefaultThroughputMiBPS = Int.MaxValue
+  import CassandraConnectorConf.convert
 
   def fromSparkConf(conf: SparkConf): WriteConf = getWriteConf(conf, None)
 
@@ -62,13 +63,13 @@ object WriteConf {
   private def getWriteConf(conf: SparkConf, cluster: Option[String] = None): WriteConf = {
 
     val batchSizeInBytes = conf.getInt(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.batch.size.bytes", cluster), DefaultBatchSizeInBytes)
+      convert("spark.cassandra.output.batch.size.bytes", cluster), DefaultBatchSizeInBytes)
 
     val consistencyLevel = ConsistencyLevel.valueOf(
-      conf.get(CassandraConnectorConf.processProperty("spark.cassandra.output.consistency.level", cluster), DefaultConsistencyLevel.name()))
+      conf.get(convert("spark.cassandra.output.consistency.level", cluster), DefaultConsistencyLevel.name()))
 
     val batchSizeInRowsStr = conf.get(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.batch.size.rows", cluster), "auto")
+      convert("spark.cassandra.output.batch.size.rows", cluster), "auto")
 
     val batchSize = {
       val Number = "([0-9]+)".r
@@ -82,16 +83,16 @@ object WriteConf {
     }
 
     val batchBufferSize = conf.getInt(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.batch.buffer.size", cluster), DefaultBatchBufferSize)
+      convert("spark.cassandra.output.batch.buffer.size", cluster), DefaultBatchBufferSize)
 
     val batchLevel = conf.getOption(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.batch.level", cluster)).map(BatchLevel.apply).getOrElse(DefaultBatchLevel)
+      convert("spark.cassandra.output.batch.level", cluster)).map(BatchLevel.apply).getOrElse(DefaultBatchLevel)
 
     val parallelismLevel = conf.getInt(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.concurrent.writes", cluster), DefaultParallelismLevel)
+      convert("spark.cassandra.output.concurrent.writes", cluster), DefaultParallelismLevel)
 
     val throughputMiBPS = conf.getInt(
-      CassandraConnectorConf.processProperty("spark.cassandra.output.throughput_mb_per_sec", cluster), DefaultThroughputMiBPS)
+      convert("spark.cassandra.output.throughput_mb_per_sec", cluster), DefaultThroughputMiBPS)
 
     WriteConf(
       batchSize = batchSize,

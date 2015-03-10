@@ -21,17 +21,17 @@ object ReadConf {
   val DefaultSplitSize = 100000
   val DefaultFetchSize = 1000
   val DefaultConsistencyLevel = ConsistencyLevel.LOCAL_ONE
-
+  import CassandraConnectorConf.convert
   def fromSparkConf(conf: SparkConf): ReadConf = getReadConf(conf)
 
   def fromSparkConf(conf: SparkConf, cluster: Option[String] = None): ReadConf = getReadConf(conf, cluster)
 
   private def getReadConf(conf: SparkConf, cluster: Option[String] = None): ReadConf = {
     ReadConf(
-      fetchSize = conf.getInt(CassandraConnectorConf.processProperty("spark.cassandra.input.page.row.size", cluster), DefaultFetchSize),
-      splitSize = conf.getInt(CassandraConnectorConf.processProperty("spark.cassandra.input.split.size", cluster), DefaultSplitSize),
+      fetchSize = conf.getInt(convert("spark.cassandra.input.page.row.size", cluster), DefaultFetchSize),
+      splitSize = conf.getInt(convert("spark.cassandra.input.split.size", cluster), DefaultSplitSize),
       consistencyLevel = ConsistencyLevel.valueOf(
-        conf.get(CassandraConnectorConf.processProperty("spark.cassandra.input.consistency.level", cluster), DefaultConsistencyLevel.name()))
+        conf.get(convert("spark.cassandra.input.consistency.level", cluster), DefaultConsistencyLevel.name()))
     )
   }
 }

@@ -14,6 +14,10 @@ trait SparkCassandraITSpecBase extends FlatSpec with Matchers with SharedEmbedde
     sc = new SparkContext(conf)
   }
 
+  it should "initiate sc" in {
+    sc should not be (null)
+  }
+
   override def afterAll(configMap: ConfigMap) {
     if (sc != null) {
       sc.stop()

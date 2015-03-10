@@ -60,9 +60,14 @@ object CassandraConnectorConf extends Logging {
     }
   }
 
-  def processProperty(property: String, cluster: Option[String] = None): String = {
+  def convert(property: String, cluster: Option[String] = None): String = {
     cluster match {
-      case Some(c) => property.replaceFirst("spark.cassandra", s"spark.$c.cassandra")
+      case Some(c) =>
+        if (c == null || c.trim.isEmpty) {
+          throw new RuntimeException("cluster can't be null or empty")
+        } else {
+          property.replaceFirst("spark.cassandra", s"spark.$c.cassandra")
+        }
       case None => property
     }
   }
@@ -72,23 +77,23 @@ object CassandraConnectorConf extends Logging {
   def apply(conf: SparkConf, cluster: Option[String]): CassandraConnectorConf = getCassandraConnectorConf(conf, cluster)
 
   private def getCassandraConnectorConf(conf: SparkConf, cluster: Option[String]): CassandraConnectorConf = {
-    val hostsStr = conf.get(processProperty(CassandraConnectionHostProperty, cluster), InetAddress.getLocalHost.getHostAddress)
+    val hostsStr = conf.get(convert(CassandraConnectionHostProperty, cluster), InetAddress.getLocalHost.getHostAddress)
     val hosts = for {
       hostName <- hostsStr.split(",").toSet[String]
       hostAddress <- resolveHost(hostName)
     } yield hostAddress
 
-    val rpcPort = conf.getInt(processProperty(CassandraConnectionRpcPortProperty, cluster), DefaultRpcPort)
-    val nativePort = conf.getInt(processProperty(CassandraConnectionNativePortProperty, cluster), DefaultNativePort)
+    val rpcPort = conf.getInt(convert(CassandraConnectionRpcPortProperty, cluster), DefaultRpcPort)
+    val nativePort = conf.getInt(convert(CassandraConnectionNativePortProperty, cluster), DefaultNativePort)
     val authConf = AuthConf.fromSparkConf(conf, cluster)
-    val keepAlive = conf.getInt(processProperty(CassandraConnectionKeepAliveProperty, cluster), DefaultKeepAliveMillis)
+    val keepAlive = conf.getInt(convert(CassandraConnectionKeepAliveProperty, cluster), DefaultKeepAliveMillis)
     
-    val localDC = conf.getOption(processProperty(CassandraConnectionLocalDCProperty, cluster))
-    val minReconnectionDelay = conf.getInt(processProperty(CassandraMinReconnectionDelayProperty, cluster), DefaultMinReconnectionDelayMillis)
-    val maxReconnectionDelay = conf.getInt(processProperty(CassandraMaxReconnectionDelayProperty, cluster), DefaultMaxReconnectionDelayMillis)
-    val queryRetryCount = conf.getInt(processProperty(CassandraQueryRetryCountProperty, cluster), DefaultQueryRetryCount)
-    val connectTimeout = conf.getInt(processProperty(CassandraConnectionTimeoutProperty, cluster), DefaultConnectTimeoutMillis)
-    val readTimeout = conf.getInt(processProperty(CassandraReadTimeoutProperty, cluster), DefaultReadTimeoutMillis)
+    val localDC = conf.getOption(convert(CassandraConnectionLocalDCProperty, cluster))
+    val minReconnectionDelay = conf.getInt(convert(CassandraMinReconnectionDelayProperty, cluster), DefaultMinReconnectionDelayMillis)
+    val maxReconnectionDelay = conf.getInt(convert(CassandraMaxReconnectionDelayProperty, cluster), DefaultMaxReconnectionDelayMillis)
+    val queryRetryCount = conf.getInt(convert(CassandraQueryRetryCountProperty, cluster), DefaultQueryRetryCount)
+    val connectTimeout = conf.getInt(convert(CassandraConnectionTimeoutProperty, cluster), DefaultConnectTimeoutMillis)
+    val readTimeout = conf.getInt(convert(CassandraReadTimeoutProperty, cluster), DefaultReadTimeoutMillis)
 
     val connectionFactory = CassandraConnectionFactory.fromSparkConf(conf, cluster)
 
