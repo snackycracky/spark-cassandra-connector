@@ -63,9 +63,13 @@ object DefaultAuthConfFactory extends AuthConfFactory {
 object AuthConf {
   val AuthConfFactoryProperty = "spark.cassandra.auth.conf.factory"
 
-  def fromSparkConf(conf: SparkConf) = {
+  def fromSparkConf(conf: SparkConf) = getAuthConf(conf)
+
+  def fromSparkConf(conf: SparkConf, cluster: Option[String]) = getAuthConf(conf, cluster)
+
+  private def getAuthConf(conf: SparkConf, cluster: Option[String] = None) = {
     val authConfFactory = conf
-      .getOption(AuthConfFactoryProperty)
+      .getOption(CassandraConnectorConf.processProperty(AuthConfFactoryProperty, cluster))
       .map(ReflectionUtil.findGlobalObject[AuthConfFactory])
       .getOrElse(DefaultAuthConfFactory)
 

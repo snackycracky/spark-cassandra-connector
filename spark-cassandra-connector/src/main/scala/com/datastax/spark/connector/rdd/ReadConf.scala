@@ -1,5 +1,6 @@
 package com.datastax.spark.connector.rdd
 
+import com.datastax.spark.connector.cql.CassandraConnectorConf
 import org.apache.spark.SparkConf
 
 import com.datastax.driver.core.ConsistencyLevel
@@ -21,14 +22,17 @@ object ReadConf {
   val DefaultFetchSize = 1000
   val DefaultConsistencyLevel = ConsistencyLevel.LOCAL_ONE
 
-  def fromSparkConf(conf: SparkConf): ReadConf = {
+  def fromSparkConf(conf: SparkConf): ReadConf = getReadConf(conf)
+
+  def fromSparkConf(conf: SparkConf, cluster: Option[String] = None): ReadConf = getReadConf(conf, cluster)
+
+  private def getReadConf(conf: SparkConf, cluster: Option[String] = None): ReadConf = {
     ReadConf(
-      fetchSize = conf.getInt("spark.cassandra.input.page.row.size", DefaultFetchSize),
-      splitSize = conf.getInt("spark.cassandra.input.split.size", DefaultSplitSize),
+      fetchSize = conf.getInt(CassandraConnectorConf.processProperty("spark.cassandra.input.page.row.size", cluster), DefaultFetchSize),
+      splitSize = conf.getInt(CassandraConnectorConf.processProperty("spark.cassandra.input.split.size", cluster), DefaultSplitSize),
       consistencyLevel = ConsistencyLevel.valueOf(
-        conf.get("spark.cassandra.input.consistency.level", DefaultConsistencyLevel.name()))
+        conf.get(CassandraConnectorConf.processProperty("spark.cassandra.input.consistency.level", cluster), DefaultConsistencyLevel.name()))
     )
   }
-
 }
 
