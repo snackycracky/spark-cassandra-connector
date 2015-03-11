@@ -21,6 +21,7 @@ import com.datastax.spark.connector.rdd.reader._
 import com.datastax.spark.connector.types.{ColumnType, TypeConverter}
 import com.datastax.spark.connector.util.CountingIterator
 import com.datastax.spark.connector._
+import com.datastax.spark.connector.util.NameTools
 
 
 /** RDD representing a Cassandra table.
@@ -277,35 +278,8 @@ class CassandraRDD[R] private[connector] (
     Schema.fromCassandra(connector, Some(keyspaceName), Some(tableName)).tables.headOption match {
       case Some(t) => t
       case None => {
-        val clusterMetadata = connector.withClusterDo(_.getMetadata)
-        val keyspaces = clusterMetadata.getKeyspaces
-        val ksMap = keyspaces.groupBy(_.getName.toLowerCase).toMap
-        ksMap.get(keyspaceName.toLowerCase) match {
-          case Some(keyspaceList) => {
-            val possibleTables =
-              keyspaceList.flatMap(_.getTables)
-                .filter(_.getName.toLowerCase == tableName.toLowerCase)
-                .map(table => table.getKeyspace.getName + "." + table.getName)
-            if (!possibleTables.isEmpty) {
-              val errorString = possibleTables.mkString("\n")
-              throw new IOException(
-                s"""Couldn't find: $keyspaceName.$tableName
-                    |Other tables exist with different cases
-                    |Did you mean :
-                    |$errorString""".stripMargin)
-            } else {
-              val errorString = keyspaceList.map(_.getName).mkString("\n")
-              throw new IOException(
-                s"""Couldtn't find: $keyspaceName.$tableName
-                    |Other keyspaces exist with different cases
-                    |Did you mean:
-                    |$errorString""".stripMargin)
-            }
-          }
-          case None => {
-            throw new IOException(s"Table not found: $keyspaceName.$tableName")
-          }
-        }
+        val suggestions = NameTools.getSuggestions(connector.withClusterDo(_.getMetadata), keyspaceName, tableName)
+        throw new IOException(NameTools.getErrorString(keyspaceName, tableName, suggestions))
       }
     }
   }

@@ -79,6 +79,7 @@ class CassandraRDDSpec extends FlatSpec with Matchers with SharedEmbeddedCassand
     session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MixedCase"(key INT PRIMARY KEY, value INT)""")
     session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MiXEDCase"(key INT PRIMARY KEY, value INT)""")
     session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MixedCASE"(key INT PRIMARY KEY, value INT)""")
+    session.execute("""CREATE TABLE IF NOT EXISTS "MixedSpace"."MoxedCAs" (key INT PRIMARY KEY, value INT)""")
 
     session.execute("CREATE TABLE IF NOT EXISTS read_test.big_table (key INT PRIMARY KEY, value INT)")
     val insert = session.prepare("INSERT INTO read_test.big_table(key, value) VALUES (?, ?)")
@@ -632,28 +633,33 @@ class CassandraRDDSpec extends FlatSpec with Matchers with SharedEmbeddedCassand
     result should have length 0
   }
 
-  it should "suggest mixed case keyspaces if they exist" in {
-    try {
-      val result = sc.cassandraTable("mixedspace", "funkytable").collect()
-      assert(false, "A cassandraTable call on a keyspace and table that don't exist should thrown an exception")
-    } catch {
-      case e:IOException=> e.getMessage should include ("MixedSpace")
-      case e:Any => fail(s"$e : A cassandraTable call on a keyspace and table that don't exist should throw an IOException")
-    }
+  it should "suggest similar tables if table doesn't exist but keyspace does" in {
+    val ioe = the [IOException] thrownBy sc.cassandraTable("MixedSpace","mixedcase").collect()
+    val message = ioe.getMessage
+    message should include ("MixedSpace.MixedCase")
+    message should include ("MixedSpace.MiXEDCase")
+    message should include ("MixedSpace.MixedCASE")
   }
 
-  it should "suggest mixed case tables if they exist" in {
-    try {
-      val result = sc.cassandraTable("MixedSpace","mixedcase").collect()
-      fail("A cassandraTable call on a keyspace and table that don't exist should thrown an exception")
-    } catch {
-      case e:IOException=> {
-        e.getMessage should include ("MixedSpace.MixedCase")
-        e.getMessage should include ("MixedSpace.MiXEDCase")
-        e.getMessage should include ("MixedSpace.MixedCASE")
-      }
-      case e:Any => fail(s"$e : A cassandraTable call on a keyspace and table that don't exist should throw an IOException")
-    }
+  it should "suggest possible keyspace and table matches if the keyspace and table do not exist" in {
+    val ioe = the [IOException] thrownBy sc.cassandraTable("MoxedSpace","mixdcase").collect()
+    val message = ioe.getMessage
+    message should include ("MixedSpace.MixedCase")
+    message should include ("MixedSpace.MiXEDCase")
+    message should include ("MixedSpace.MixedCASE")
+    message should include ("MixedSpace.MixedCASE")
+  }
+
+  it should "suggest possible keyspaces if the table exists but in a different keyspace" in {
+    val ioe = the [IOException] thrownBy sc.cassandraTable("MoxedSpace","MoxedCAS").collect()
+    val message = ioe.getMessage
+    message should include ("MixedSpace.MoxedCAs")
+  }
+
+  it should "suggest possible keyspaces and tables if the table has a fuzzy match but they keyspace does not" in {
+    val ioe = the [IOException] thrownBy sc.cassandraTable("rock","MixedCase").collect()
+    val message = ioe.getMessage
+    message should include ("MixedSpace.MixedCase")
   }
 
 }
