@@ -647,7 +647,6 @@ class CassandraRDDSpec extends FlatSpec with Matchers with SharedEmbeddedCassand
     message should include ("MixedSpace.MixedCase")
     message should include ("MixedSpace.MiXEDCase")
     message should include ("MixedSpace.MixedCASE")
-    message should include ("MixedSpace.MixedCASE")
   }
 
   it should "suggest possible keyspaces if the table exists but in a different keyspace" in {
